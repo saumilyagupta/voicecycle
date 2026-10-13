@@ -2,6 +2,14 @@
 
 All notable changes to VoiceCycle are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-13
+
+### Changed
+
+- Neutral product wording across the README, docs and release notes.
+- Refreshed screenshots and social preview image.
+- Android version code raised to 2, so this APK installs as an update over 1.0.0 from the same signing key.
+
 ## [1.0.0] - 2026-10-13
 
 First public release.
