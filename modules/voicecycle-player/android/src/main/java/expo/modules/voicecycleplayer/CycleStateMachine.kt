@@ -4,8 +4,11 @@ package expo.modules.voicecycleplayer
 sealed class CycleEvent {
   abstract val nowMs: Long
 
-  data class Start(override val nowMs: Long, val config: CycleConfig) : CycleEvent()
-  data class PlaybackCompleted(override val nowMs: Long) : CycleEvent()
+  /** [firstRoundPlays] is the drawn size of the first round. */
+  data class Start(override val nowMs: Long, val config: CycleConfig, val firstRoundPlays: Int) : CycleEvent()
+
+  /** [next] is used only if this play ends a round: the wait and the size of the following round. */
+  data class PlaybackCompleted(override val nowMs: Long, val next: Draw) : CycleEvent()
   data class Tick(override val nowMs: Long) : CycleEvent()
   data class Pause(override val nowMs: Long, val reason: PauseReason) : CycleEvent()
   data class Resume(override val nowMs: Long) : CycleEvent()
@@ -17,12 +20,14 @@ sealed class CycleEvent {
 /**
  * Pure transition function for the repetition cycle:
  *
- *   IDLE/STOPPED -start-> PLAYING -recording ends-> WAITING -interval elapses-> PLAYING ...
+ *   IDLE/STOPPED -start-> PLAYING x N (one round) -round ends-> WAITING -wait elapses-> PLAYING ...
  *
  * Rules:
- * - The interval starts when the recording finishes, not when it starts.
- * - Interval 0 restarts the recording immediately.
- * - If the remaining session time is not longer than the interval when a recording
+ * - A round is N back-to-back plays. N and the following wait may be random; they are
+ *   drawn outside this pure function and passed in with the events.
+ * - The wait starts when the last play of a round finishes, not when it starts.
+ * - A wait of 0 starts the next round immediately.
+ * - If the remaining session time is not longer than the drawn wait when a round
  *   finishes, the session ends right away instead of waiting in silence for nothing.
  * - When the session timer reaches zero mid-recording, the recording fades out and stops.
  * - Pause freezes the recording position, the wait countdown and the session timer.
@@ -34,7 +39,7 @@ object CycleStateMachine {
 
   fun reduce(model: CycleModel, event: CycleEvent): Transition = when (event) {
     is CycleEvent.Start -> start(model, event)
-    is CycleEvent.PlaybackCompleted -> completed(model, event.nowMs)
+    is CycleEvent.PlaybackCompleted -> completed(model, event)
     is CycleEvent.Tick -> tick(model, event.nowMs)
     is CycleEvent.Pause -> pause(model, event.nowMs, event.reason)
     is CycleEvent.Resume -> resume(model, event.nowMs)
@@ -55,25 +60,45 @@ object CycleStateMachine {
       config = event.config,
       sessionRemainingMs = event.config.sessionMs,
       anchorMs = event.nowMs,
+      roundTarget = clampPlays(event.firstRoundPlays, event.config),
     )
     return Transition(next, listOf(Effect.START_FROM_BEGINNING))
   }
 
-  private fun completed(model: CycleModel, nowMs: Long): Transition {
+  private fun completed(model: CycleModel, event: CycleEvent.PlaybackCompleted): Transition {
     if (model.state != CycleState.PLAYING) return Transition(model)
     val config = model.config ?: return Transition(model)
-    val counted = model.rebase(nowMs).copy(completedRepetitions = model.completedRepetitions + 1)
+    val nowMs = event.nowMs
+    val counted = model.rebase(nowMs).copy(
+      completedRepetitions = model.completedRepetitions + 1,
+      playsInRound = model.playsInRound + 1,
+    )
     val sessionLeft = counted.sessionRemainingMs
-
-    if (sessionLeft <= 0 || (config.intervalMs > 0 && sessionLeft <= config.intervalMs)) {
+    if (sessionLeft <= 0) {
       return finish(counted, nowMs, EndReason.SESSION_COMPLETE, Effect.STOP_PLAYER, null)
     }
-    if (config.intervalMs == 0L) {
+    // More plays left in this round: replay straight away.
+    if (counted.playsInRound < counted.roundTarget) {
       return Transition(counted, listOf(Effect.START_FROM_BEGINNING))
     }
-    val waiting = counted.copy(state = CycleState.WAITING, waitRemainingMs = config.intervalMs)
+
+    val waitMs = event.next.waitMs.coerceIn(config.intervalMinMs, config.intervalMaxMs)
+    val nextRound = counted.copy(
+      playsInRound = 0,
+      roundTarget = clampPlays(event.next.roundPlays, config),
+      currentWaitMs = waitMs,
+    )
+    if (waitMs > 0 && sessionLeft <= waitMs) {
+      return finish(nextRound, nowMs, EndReason.SESSION_COMPLETE, Effect.STOP_PLAYER, null)
+    }
+    if (waitMs == 0L) {
+      return Transition(nextRound, listOf(Effect.START_FROM_BEGINNING))
+    }
+    val waiting = nextRound.copy(state = CycleState.WAITING, waitRemainingMs = waitMs)
     return Transition(waiting, listOf(Effect.ENTER_WAIT))
   }
+
+  private fun clampPlays(plays: Int, config: CycleConfig): Int = plays.coerceIn(config.playsMin, config.playsMax)
 
   private fun tick(model: CycleModel, nowMs: Long): Transition = when (model.state) {
     CycleState.PLAYING ->

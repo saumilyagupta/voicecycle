@@ -112,3 +112,26 @@ describe('describeReport', () => {
     expect(describeReport(null)).toBeNull();
   });
 });
+
+describe('rounds and random waits', () => {
+  it('shows the position in a multi-play round', () => {
+    const status = describeStatus(snap({ state: 'PLAYING', playsInRound: 1, roundTarget: 3 }));
+    expect(status.detail).toBe('Play 2 of 3 in this round');
+  });
+
+  it('keeps the plain text for single-play rounds', () => {
+    expect(describeStatus(snap({ state: 'PLAYING', roundTarget: 1 })).detail).toBe('The recording is playing');
+  });
+
+  it('shows the drawn length of a random wait', () => {
+    const status = describeStatus(
+      snap({ state: 'WAITING', intervalMinMs: 60_000, intervalMaxMs: 600_000, currentWaitMs: 432_000 }),
+    );
+    expect(status.detail).toBe('Random wait of 7:12 this time');
+  });
+
+  it('keeps the plain text for fixed waits', () => {
+    const status = describeStatus(snap({ state: 'WAITING', intervalMinMs: 60_000, intervalMaxMs: 60_000 }));
+    expect(status.detail).toBe('Silent until the next play');
+  });
+});

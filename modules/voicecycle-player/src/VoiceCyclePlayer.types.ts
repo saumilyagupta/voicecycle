@@ -10,20 +10,36 @@ export type PlayerSnapshot = {
   endReason: EndReason | null;
   errorMessage: string | null;
   completedRepetitions: number;
+  /** Plays finished in the current round. */
+  playsInRound: number;
+  /** Plays in the current round. */
+  roundTarget: number;
+  /** Full length of the current or most recent wait. */
+  currentWaitMs: number;
   positionMs: number;
   durationMs: number;
   waitRemainingMs: number;
   sessionRemainingMs: number;
-  intervalMs: number;
+  intervalMinMs: number;
+  intervalMaxMs: number;
+  playsMin: number;
+  playsMax: number;
   sessionMs: number;
   title: string | null;
 };
 
-export type StartOptions = {
+/** Ranges with min === max are fixed values. Random values are drawn natively for every round. */
+export type CycleOptions = {
+  intervalMinMs: number;
+  intervalMaxMs: number;
+  playsMin: number;
+  playsMax: number;
+  sessionMs: number;
+};
+
+export type StartOptions = CycleOptions & {
   uri: string;
   title: string;
-  intervalMs: number;
-  sessionMs: number;
 };
 
 export type SessionReport = {

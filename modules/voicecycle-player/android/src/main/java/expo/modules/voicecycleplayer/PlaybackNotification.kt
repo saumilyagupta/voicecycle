@@ -74,7 +74,12 @@ object PlaybackNotification {
   private fun statusText(model: CycleModel): String {
     val reps = "${model.completedRepetitions} played"
     return when (model.state) {
-      CycleState.PLAYING -> "Playing · $reps"
+      CycleState.PLAYING ->
+        if (model.roundTarget > 1) {
+          "Playing ${model.playsInRound + 1} of ${model.roundTarget} · $reps"
+        } else {
+          "Playing · $reps"
+        }
       CycleState.WAITING -> "Waiting for next play · $reps"
       CycleState.PAUSED -> when (model.pauseReason) {
         PauseReason.INTERRUPTION -> "Paused by interruption · $reps"

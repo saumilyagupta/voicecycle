@@ -18,11 +18,15 @@ import expo.modules.kotlin.records.Record
 private const val SNAPSHOT_EVENT = "onSnapshot"
 private const val MAX_INTERVAL_MS = 24 * 60 * 60_000.0
 private const val MAX_SESSION_MS = 48 * 60 * 60_000.0
+private const val MAX_PLAYS_PER_ROUND = 50
 
 class StartOptions : Record {
   @Field val uri: String = ""
   @Field val title: String = ""
-  @Field val intervalMs: Double = -1.0
+  @Field val intervalMinMs: Double = -1.0
+  @Field val intervalMaxMs: Double = -1.0
+  @Field val playsMin: Int = 1
+  @Field val playsMax: Int = 1
   @Field val sessionMs: Double = -1.0
 }
 
@@ -73,7 +77,10 @@ class VoiceCyclePlayerModule : Module() {
         .setAction(PlaybackService.ACTION_START)
         .putExtra(PlaybackService.EXTRA_URI, options.uri)
         .putExtra(PlaybackService.EXTRA_TITLE, options.title)
-        .putExtra(PlaybackService.EXTRA_INTERVAL_MS, options.intervalMs.toLong())
+        .putExtra(PlaybackService.EXTRA_INTERVAL_MIN_MS, options.intervalMinMs.toLong())
+        .putExtra(PlaybackService.EXTRA_INTERVAL_MAX_MS, options.intervalMaxMs.toLong())
+        .putExtra(PlaybackService.EXTRA_PLAYS_MIN, options.playsMin)
+        .putExtra(PlaybackService.EXTRA_PLAYS_MAX, options.playsMax)
         .putExtra(PlaybackService.EXTRA_SESSION_MS, options.sessionMs.toLong())
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         context.startForegroundService(intent)
@@ -99,8 +106,12 @@ class VoiceCyclePlayerModule : Module() {
 
   private fun validate(options: StartOptions) {
     if (options.uri.isBlank()) throw InvalidOptionsException("A recording must be selected")
-    if (options.intervalMs.isNaN() || options.intervalMs < 0 || options.intervalMs > MAX_INTERVAL_MS) {
-      throw InvalidOptionsException("Interval must be between 0 and 24 hours")
+    val (minWait, maxWait) = options.intervalMinMs to options.intervalMaxMs
+    if (minWait.isNaN() || maxWait.isNaN() || minWait < 0 || maxWait > MAX_INTERVAL_MS || maxWait < minWait) {
+      throw InvalidOptionsException("Wait must be between 0 and 24 hours, with minimum not above maximum")
+    }
+    if (options.playsMin < 1 || options.playsMax > MAX_PLAYS_PER_ROUND || options.playsMax < options.playsMin) {
+      throw InvalidOptionsException("Plays in a row must be between 1 and $MAX_PLAYS_PER_ROUND, with minimum not above maximum")
     }
     if (options.sessionMs.isNaN() || options.sessionMs < 1_000 || options.sessionMs > MAX_SESSION_MS) {
       throw InvalidOptionsException("Session duration must be between 1 second and 48 hours")

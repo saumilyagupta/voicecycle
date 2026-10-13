@@ -1,4 +1,5 @@
 import type { CycleState, PlayerSnapshot } from '../../modules/voicecycle-player';
+import { formatClock } from './time';
 
 export const IDLE_SNAPSHOT: PlayerSnapshot = {
   state: 'IDLE',
@@ -7,11 +8,17 @@ export const IDLE_SNAPSHOT: PlayerSnapshot = {
   endReason: null,
   errorMessage: null,
   completedRepetitions: 0,
+  playsInRound: 0,
+  roundTarget: 1,
+  currentWaitMs: 0,
   positionMs: 0,
   durationMs: 0,
   waitRemainingMs: 0,
   sessionRemainingMs: 0,
-  intervalMs: 0,
+  intervalMinMs: 0,
+  intervalMaxMs: 0,
+  playsMin: 1,
+  playsMax: 1,
   sessionMs: 0,
   title: null,
 };
@@ -33,9 +40,9 @@ export type StatusText = { title: string; detail: string };
 export function describeStatus(snapshot: PlayerSnapshot): StatusText {
   switch (snapshot.state) {
     case 'PLAYING':
-      return { title: 'Playing', detail: 'The recording is playing' };
+      return { title: 'Playing', detail: playingDetail(snapshot) };
     case 'WAITING':
-      return { title: 'Waiting', detail: 'Silent until the next play' };
+      return { title: 'Waiting', detail: waitingDetail(snapshot) };
     case 'PAUSED':
       return { title: 'Paused', detail: pauseDetail(snapshot) };
     case 'STOPPED':
@@ -43,6 +50,24 @@ export function describeStatus(snapshot: PlayerSnapshot): StatusText {
     default:
       return { title: 'Ready', detail: 'Choose a recording and press Start' };
   }
+}
+
+/** "Play 2 of 3 in this round" when rounds have several plays. */
+export function roundLabel(snapshot: PlayerSnapshot): string | null {
+  if (snapshot.roundTarget <= 1) return null;
+  const current = Math.min(snapshot.playsInRound + 1, snapshot.roundTarget);
+  return `Play ${current} of ${snapshot.roundTarget} in this round`;
+}
+
+function playingDetail(snapshot: PlayerSnapshot): string {
+  return roundLabel(snapshot) ?? 'The recording is playing';
+}
+
+function waitingDetail(snapshot: PlayerSnapshot): string {
+  const isRandom = snapshot.intervalMinMs !== snapshot.intervalMaxMs;
+  return isRandom
+    ? `Random wait of ${formatClock(snapshot.currentWaitMs, true)} this time`
+    : 'Silent until the next play';
 }
 
 function pauseDetail(snapshot: PlayerSnapshot): string {

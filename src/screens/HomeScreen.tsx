@@ -4,20 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Controls } from '../components/Controls';
 import { Notice } from '../components/Notice';
-import { OptionPicker } from '../components/OptionPicker';
 import { RecordingCard } from '../components/RecordingCard';
+import { SessionSettings } from '../components/SessionSettings';
 import { StatusHero, stateColor } from '../components/StatusHero';
 import { ThemePicker } from '../components/ThemePicker';
 import { isActiveState, primaryActionFor } from '../domain/display';
 import { describeReport } from '../domain/report';
-import {
-  estimatePlays,
-  INTERVAL_LIMITS,
-  INTERVAL_PRESETS_MIN,
-  SESSION_LIMITS,
-  SESSION_PRESETS_MIN,
-} from '../domain/settings';
-import { minutesToMs } from '../domain/time';
+import { toCycleOptions } from '../domain/settings';
 import { usePlayer } from '../hooks/usePlayer';
 import { useSettings } from '../hooks/useSettings';
 import { pickRecording, removeRecording } from '../services/recordingLibrary';
@@ -77,8 +70,7 @@ export function HomeScreen() {
       await player.start({
         uri: settings.recording.uri,
         title: settings.recording.name,
-        intervalMs: minutesToMs(settings.intervalMinutes),
-        sessionMs: minutesToMs(settings.sessionMinutes),
+        ...toCycleOptions(settings),
       });
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'Could not start the session.');
@@ -87,10 +79,6 @@ export function HomeScreen() {
     }
   };
 
-  const playsHint = settings.recording
-    ? `About ${estimatePlays(settings.recording.durationMs, settings.intervalMinutes, settings.sessionMinutes)} plays fit in this session.`
-    : 'Playback stops automatically when the time is up.';
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView style={styles.safe} behavior="padding">
@@ -98,7 +86,7 @@ export function HomeScreen() {
           <Text style={[styles.brand, { color: colors.textMuted }]} accessibilityRole="header">
             Voice<Text style={{ color: colors.text }}>Cycle</Text>
           </Text>
-  
+
           {!player.isAvailable ? (
             <Notice
               tone="error"
@@ -106,9 +94,9 @@ export function HomeScreen() {
               message="The native player is missing. VoiceCycle needs its own development build or APK and does not run in Expo Go."
             />
           ) : null}
-  
+
           <StatusHero snapshot={snapshot} theme={theme} />
-  
+
           <View style={styles.notices}>
             {missingRecordingName && !settings.recording ? (
               <Notice
@@ -127,7 +115,7 @@ export function HomeScreen() {
             ) : null}
             {report ? <Notice tone={report.tone} theme={theme} message={report.text} /> : null}
           </View>
-  
+
           <Controls
             action={action}
             accent={accent}
@@ -137,7 +125,7 @@ export function HomeScreen() {
             onPrimary={handlePrimary}
             onStop={player.stop}
           />
-  
+
           <RecordingCard
             recording={settings.recording}
             snapshot={snapshot}
@@ -146,40 +134,9 @@ export function HomeScreen() {
             isLocked={isActive || isStarting}
             onSelect={handleSelect}
           />
-  
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <OptionPicker
-              title="Wait between plays"
-              hint="Silence after the recording ends, before it starts again. 0 repeats immediately."
-              valueMinutes={settings.intervalMinutes}
-              presets={INTERVAL_PRESETS_MIN}
-              presetLabel={(m) => `${m}m`}
-              limits={INTERVAL_LIMITS}
-              customUnitLabel="minutes"
-              disabled={isActive}
-              theme={theme}
-              onChange={(intervalMinutes) => applySetting({ intervalMinutes })}
-            />
-            <View style={[styles.separator, { backgroundColor: colors.border }]} />
-            <OptionPicker
-              title="Session length"
-              hint={playsHint}
-              valueMinutes={settings.sessionMinutes}
-              presets={SESSION_PRESETS_MIN}
-              presetLabel={(m) => `${m / 60}h`}
-              limits={SESSION_LIMITS}
-              customUnitLabel="minutes"
-              disabled={isActive}
-              theme={theme}
-              onChange={(sessionMinutes) => applySetting({ sessionMinutes })}
-            />
-            {isActive ? (
-              <Text style={[styles.lockedHint, { color: colors.textFaint }]}>
-                Settings apply to the next session. Stop to change them.
-              </Text>
-            ) : null}
-          </View>
-  
+
+          <SessionSettings settings={settings} isLocked={isActive} theme={theme} onChange={applySetting} />
+
           <View style={styles.footer}>
             <Text style={[styles.footerLabel, { color: colors.textFaint }]}>THEME</Text>
             <ThemePicker theme={theme} onChange={(themeId) => applySetting({ themeId })} />
@@ -195,9 +152,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 20 },
   brand: { fontSize: 20, fontWeight: '300', letterSpacing: 0.5 },
   notices: { gap: 8 },
-  section: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: 18, gap: 18 },
-  separator: { height: StyleSheet.hairlineWidth },
-  lockedHint: { fontSize: 13 },
   footer: { gap: 10 },
   footerLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.6 },
 });

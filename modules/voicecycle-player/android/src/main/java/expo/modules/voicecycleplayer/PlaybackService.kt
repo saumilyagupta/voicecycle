@@ -21,6 +21,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
+import kotlin.random.Random
 
 /**
  * Foreground media service that owns the whole repetition cycle: playback,
@@ -40,7 +41,10 @@ class PlaybackService : Service() {
     const val ACTION_STOP = "expo.modules.voicecycleplayer.STOP"
     const val EXTRA_URI = "uri"
     const val EXTRA_TITLE = "title"
-    const val EXTRA_INTERVAL_MS = "intervalMs"
+    const val EXTRA_INTERVAL_MIN_MS = "intervalMinMs"
+    const val EXTRA_INTERVAL_MAX_MS = "intervalMaxMs"
+    const val EXTRA_PLAYS_MIN = "playsMin"
+    const val EXTRA_PLAYS_MAX = "playsMax"
     const val EXTRA_SESSION_MS = "sessionMs"
 
     /** Tick rate while the app is on screen, so progress and countdowns update every second. */
@@ -80,6 +84,7 @@ class PlaybackService : Service() {
     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
     .build()
 
+  private val random: Random = Random.Default
   private var model = CycleModel()
   private var player: MediaPlayer? = null
   private var title: String? = null
@@ -164,7 +169,10 @@ class PlaybackService : Service() {
 
   private fun handleStart(intent: Intent) {
     val uri = intent.getStringExtra(EXTRA_URI)
-    val intervalMs = intent.getLongExtra(EXTRA_INTERVAL_MS, -1)
+    val intervalMinMs = intent.getLongExtra(EXTRA_INTERVAL_MIN_MS, -1)
+    val intervalMaxMs = intent.getLongExtra(EXTRA_INTERVAL_MAX_MS, -1)
+    val playsMin = intent.getIntExtra(EXTRA_PLAYS_MIN, 1)
+    val playsMax = intent.getIntExtra(EXTRA_PLAYS_MAX, playsMin)
     val sessionMs = intent.getLongExtra(EXTRA_SESSION_MS, -1)
 
     // Every startForegroundService() call must be answered with startForeground(),
@@ -180,7 +188,7 @@ class PlaybackService : Service() {
     fading = false
     lastNotificationKey = null
     val config = try {
-      CycleConfig(intervalMs, sessionMs)
+      CycleConfig(intervalMinMs, intervalMaxMs, sessionMs, playsMin, playsMax)
     } catch (e: IllegalArgumentException) {
       return failBeforeStart("Invalid session settings: ${e.message}")
     }
@@ -203,7 +211,7 @@ class PlaybackService : Service() {
     )
     mediaSession.isActive = true
     CycleStore.markSessionStarted(this, title)
-    dispatchEvent(CycleEvent.Start(now(), config))
+    dispatchEvent(CycleEvent.Start(now(), config, CycleRandom.draw(config, random).roundPlays))
   }
 
   private fun handleControl(action: String) {
@@ -234,6 +242,7 @@ class PlaybackService : Service() {
         TAG,
         "${previous.state} -> ${model.state} on ${event::class.simpleName} " +
           "effects=${transition.effects} reps=${model.completedRepetitions} " +
+          "round=${model.playsInRound}/${model.roundTarget} waitMs=${model.currentWaitMs} " +
           "sessionLeftMs=${model.sessionRemainingAt(event.nowMs)} reason=${model.pauseReason ?: model.endReason}",
       )
     }
@@ -283,6 +292,9 @@ class PlaybackService : Service() {
       FocusResult.FAILED -> handler.post { dispatchEvent(CycleEvent.Pause(now(), PauseReason.FOCUS_LOST)) }
     }
   }
+
+  /** Wait and round size to use if the play that just finished ends a round. */
+  private fun nextDraw(): Draw = model.config?.let { CycleRandom.draw(it, random) } ?: Draw(0, 1)
 
   private fun onTick() {
     dispatchEvent(CycleEvent.Tick(now()))
@@ -371,7 +383,7 @@ class PlaybackService : Service() {
     setAudioAttributes(audioAttributes)
     setDataSource(this@PlaybackService, uri)
     setWakeMode(this@PlaybackService, PowerManager.PARTIAL_WAKE_LOCK)
-    setOnCompletionListener { dispatchEvent(CycleEvent.PlaybackCompleted(now())) }
+    setOnCompletionListener { dispatchEvent(CycleEvent.PlaybackCompleted(now(), nextDraw())) }
     setOnErrorListener { _, what, extra ->
       Log.w(TAG, "MediaPlayer error what=$what extra=$extra")
       dispatchEvent(CycleEvent.Failure(now(), "Playback failed (code $what/$extra)"))
@@ -415,7 +427,7 @@ class PlaybackService : Service() {
   /** Re-posts the notification only when its visible content changes. */
   private fun updateNotification(snapshot: PlayerSnapshot) {
     if (!model.isActive) return
-    val key = "${model.state}:${model.pauseReason}:${model.completedRepetitions}"
+    val key = "${model.state}:${model.pauseReason}:${model.completedRepetitions}:${model.currentWaitMs}"
     if (key == lastNotificationKey) return
     lastNotificationKey = key
     val manager = getSystemService(NotificationManager::class.java)
