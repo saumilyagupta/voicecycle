@@ -6,6 +6,6 @@ labels: enhancement
 
 **What would you like to do?**
 
-**Why does it matter for you?** (for example, how you use VoiceCycle at night)
+**Why does it matter for you?** (for example, how you use VoiceCycle)
 
 **Anything you tried already?**

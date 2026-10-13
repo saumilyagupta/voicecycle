@@ -4,9 +4,9 @@
 
 # VoiceCycle
 
-**Play. Wait. Repeat. All night.**
+**Play. Wait. Repeat.**
 
-An offline Android app that plays your own recording, waits, and plays it again for hours, even with the screen locked.
+An offline Android app that plays your own recording, waits, and plays it again, even with the screen locked.
 
 [![Android 7.0+](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)](#install)
 [![Expo SDK 57](https://img.shields.io/badge/Expo%20SDK-57-000020?logo=expo&logoColor=white)](https://docs.expo.dev/)
@@ -21,14 +21,14 @@ An offline Android app that plays your own recording, waits, and plays it again 
   <img src="docs/images/screen-playing.png" width="200" alt="Playing a recording" />
   <img src="docs/images/screen-waiting.png" width="200" alt="Random wait countdown" />
   <img src="docs/images/screen-settings.png" width="200" alt="Wait, plays in a row and session settings" />
-  <img src="docs/images/screen-ember.png" width="200" alt="Ember night theme" />
+  <img src="docs/images/screen-ember.png" width="200" alt="Ember theme" />
 </p>
 
 ## Why VoiceCycle
 
-You have a recording you want to hear again and again: affirmations, a language lesson, a lecture, a breathing exercise. Music players can loop it, but they can't leave a pause between plays. A JavaScript timer can, until Android puts the app to sleep and the next play never comes.
+You have a recording you want to hear again and again: a language lesson, a lecture, a practice drill, a breathing exercise. Music players can loop it, but they can't leave a pause between plays. A JavaScript timer can, until Android suspends the app in the background and the next play never comes.
 
-VoiceCycle runs the whole cycle in a native Android media service. It keeps its own clock, so the next play starts on time after a silent wait of minutes or hours, with the screen off and the phone in Doze.
+VoiceCycle runs the whole cycle in a native Android media service. It keeps its own clock, so the next play starts on time after a silent wait, with the screen off and the phone in Doze.
 
 ## Features
 
@@ -39,24 +39,24 @@ VoiceCycle runs the whole cycle in a native Android media service. It keeps its 
 - **Works with the screen locked.** Verified with the screen off and Android Doze forced on.
 - **Lock-screen controls.** Pause, resume and stop from the notification or lock screen. The notification counts down to the next play.
 - **Polite with calls and other apps.** Pauses for a phone call and resumes after it. Pauses when another app starts music or headphones are unplugged.
-- **Morning report.** Next morning the app tells you whether the session finished, and how many times the recording played.
-- **Made for the dark.** Three night themes: Dusk, Black for OLED screens, and Ember with almost no blue light.
+- **Session report.** When you come back, the app tells you whether the last session finished, and how many times the recording played.
+- **Dark themes.** Dusk, Black for OLED screens, and warm Ember.
 - **Remembers everything.** Your recording and settings are still there next time.
 - **Completely offline.** No account, no ads, no analytics, no network access.
 
-## How a night looks
+## How a session looks
 
-With a 12-minute recording, a random wait of 5–15 minutes, 1–3 plays in a row, and an 8-hour session:
+With a 12-minute recording, a random wait of 5–15 minutes, 1–3 plays in a row, and a 2-hour session:
 
 ```
-22:30  ▶ play 1 of 2
-22:42  ▶ play 2 of 2
-22:54  · wait 8:36 (random)
-23:03  ▶ play 1 of 1
-23:15  · wait 13:02 (random)
-23:28  ▶ play 1 of 3
-  ...
-06:30  ■ session time is up, fade out
+0:00  ▶ play 1 of 2
+0:12  ▶ play 2 of 2
+0:24  · wait 8:36 (random)
+0:33  ▶ play 1 of 1
+0:45  · wait 13:02 (random)
+0:58  ▶ play 1 of 3
+ ...
+2:00  ■ session time is up, fade out
 ```
 
 ## Install
@@ -76,7 +76,7 @@ Requires Android 7.0 or newer.
 4. Choose **Session length**.
 5. Tap **Start** and lock your phone.
 
-> **First night tip:** try a 2-hour session first and check the morning report. Then follow the battery settings below if your phone needs them.
+> **Tip:** start with a short session and check the session report afterwards. If it says the session was cut off, follow the battery settings below.
 
 ## Settings
 
@@ -85,18 +85,18 @@ Requires Android 7.0 or newer.
 | Wait between plays | 0, 5, 10, 15, 20, 30 min · Custom 0–240 min · Random min–max | Starts when the recording **ends**. Decimals allowed, so `0.5` is 30 seconds. 0 repeats immediately |
 | Plays in a row | 1×, 2×, 3× · Custom 1–50 · Random min–max | Random draws a new count for every round |
 | Session length | 1, 2, 4, 6, 8 h · Custom 1–1440 min | The app shows roughly how many plays fit |
-| Theme | Dusk, Black, Ember | Black suits OLED screens. Ember is warm and low in blue light |
+| Theme | Dusk, Black, Ember | Black suits OLED screens. Ember is a warm palette |
 
 **Pause** freezes everything: the recording, the wait countdown and the session timer. Settings are locked while a session runs and apply to the next one.
 
-## Overnight reliability
+## Background playback
 
-VoiceCycle does not ask for a battery-optimisation exemption. A foreground media service is normally enough. Some phone brands still close background apps. If the morning report says a session was **cut off**:
+VoiceCycle does not ask for a battery-optimisation exemption. A foreground media service is normally enough. Some phone brands still close background apps. If the session report says a session was **cut off**:
 
 1. Open **Settings > Apps > VoiceCycle > Battery** and choose **Unrestricted** (also called "Don't optimise" or "No restrictions").
 2. **Samsung:** remove VoiceCycle from *Sleeping apps* and *Deep sleeping apps* under Battery > Background usage limits.
 3. **Xiaomi, Oppo, Vivo, Huawei, OnePlus:** also allow *Autostart* and lock the app in Recents. See [dontkillmyapp.com](https://dontkillmyapp.com) for your model.
-4. Keep the phone charging overnight if you can. Battery Saver may restrict background work.
+4. Battery Saver may restrict background work. Charging the phone during long sessions helps.
 
 | Situation | What happens |
 |---|---|
@@ -131,7 +131,7 @@ npm run typecheck
 npm run lint
 ```
 
-CI runs all of them on every push. [docs/TESTING.md](docs/TESTING.md) has the emulator results, a 19-step manual test plan and an overnight checklist for real phones.
+CI runs all of them on every push. [docs/TESTING.md](docs/TESTING.md) has the emulator results, a 19-step manual test plan and a checklist for long sessions on real phones.
 
 ## How it works
 
@@ -143,7 +143,7 @@ flowchart LR
   Service -- "snapshots" --> UI
 ```
 
-The native service owns playback, the wait and the session timer. The interface only shows what the service reports, so reopening the app can never start a second session. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains the design, the state machine and why simpler approaches fail overnight.
+The native service owns playback, the wait and the session timer. The interface only shows what the service reports, so reopening the app can never start a second session. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains the design, the state machine and why simpler approaches fail in the background.
 
 ## Roadmap
 
@@ -156,7 +156,7 @@ iOS is not supported. The playback engine is Android-only.
 
 ## Contributing
 
-Bug reports from real phones help most, especially overnight results. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and use the issue templates. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Bug reports from real phones help most, especially from long sessions. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and use the issue templates. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

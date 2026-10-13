@@ -16,8 +16,8 @@ First public release.
 - Pause and resume that freeze the recording, the wait countdown and the session timer.
 - Lock-screen and notification controls, with a live countdown during the wait.
 - Automatic pause for calls, other audio apps and unplugged headphones. Calls resume by themselves.
-- Morning report of the last session: finished, stopped, failed, or cut off by Android.
-- Three night themes: Dusk, Black (OLED) and Ember (low blue light).
+- Report of the last session: finished, stopped, failed, or cut off by Android.
+- Three dark themes: Dusk, Black (OLED) and Ember.
 - Settings and the selected recording are remembered. Recordings are copied into private app storage.
 - Optional release signing from user-level Gradle properties.
 - CI for tests and builds, and a tag-triggered workflow that publishes the APK.

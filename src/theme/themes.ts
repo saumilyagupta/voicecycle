@@ -23,8 +23,8 @@ export type Theme = {
 };
 
 /**
- * Three night palettes. Every one keeps body text at a comfortable contrast
- * without pure white, and Ember drops nearly all blue light for bedtime use.
+ * Three dark palettes. Every one keeps body text at a comfortable contrast
+ * without pure white. Ember is a warm, low-blue variant.
  */
 export const THEMES: Record<ThemeId, Theme> = {
   dusk: {

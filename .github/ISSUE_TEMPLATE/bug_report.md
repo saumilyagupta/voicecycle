@@ -22,7 +22,7 @@ labels: bug
 - Battery Saver on? Phone charging?
 - Was the screen locked?
 
-**What the app said the next morning** (the note under the status, if any)
+**What the app reported afterwards** (the note under the status, if any)
 
 **Log** (optional, very helpful)
 

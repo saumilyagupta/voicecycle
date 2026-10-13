@@ -1,7 +1,7 @@
 {
   "name": "voicecycle",
   "version": "1.0.0",
-  "description": "Offline Android app that plays a recording, waits a fixed or random time, and repeats all night with the screen locked.",
+  "description": "Offline Android app that plays a recording, waits a fixed or random time, and repeats with the screen locked.",
   "author": "Saumilya JJ",
   "license": "MIT",
   "private": true,
@@ -10,7 +10,6 @@
     "expo",
     "react-native",
     "audio",
-    "sleep",
     "repetition",
     "foreground-service",
     "offline"

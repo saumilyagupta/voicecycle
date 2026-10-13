@@ -32,7 +32,7 @@ These were run on an Android 15 emulator with a 15-second test recording. Doze w
 | Force-kill during a session | Next launch reports the session was cut off after 1 play |
 | Cold restart | Recording and all settings restored |
 
-An emulator does not prove overnight reliability on a real phone. Use the checklist at the end of this page.
+An emulator does not prove long-session reliability on a real phone. Use the checklist at the end of this page.
 
 ## Manual test procedure
 
@@ -60,14 +60,14 @@ Use a short recording (20 to 60 seconds) and short settings so each test takes m
 | 18 | Plays in a row | Plays in a row 3, wait 0.25 | The recording plays 3 times back to back, then waits 15 seconds. Status shows "Play 2 of 3 in this round" |
 | 19 | Random plays in a row | Plays in a row Random, 1 to 3 | Rounds of 1, 2 or 3 plays in varying order |
 
-## Overnight checklist (physical phone)
+## Long-session checklist (physical phone)
 
-Before relying on VoiceCycle for a full night:
+Before relying on VoiceCycle for long sessions:
 
 - [ ] Install the **release** APK, not the development build.
 - [ ] Allow notifications when asked.
 - [ ] Apply the battery settings from the README for your phone brand.
-- [ ] First night: a 2-hour session with your real recording and settings, phone locked and unplugged.
-- [ ] In the morning, open the app. The note under the status says whether the last session finished, and after how many plays. Compare it with the estimate under Session length.
-- [ ] Repeat with the phone charging, and with Battery Saver on if you use it at night.
-- [ ] Only then rely on a full 8-hour session.
+- [ ] Run a 2-hour session with your real recording and settings, phone locked and unplugged.
+- [ ] Afterwards, open the app. The note under the status says whether the last session finished, and after how many plays. Compare it with the estimate under Session length.
+- [ ] Repeat with the phone charging, and with Battery Saver on if you normally use it.
+- [ ] Only then rely on sessions of several hours.

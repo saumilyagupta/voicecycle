@@ -1,4 +1,4 @@
-VoiceCycle is an offline Android app built with Expo SDK 57, React Native 0.86 and TypeScript. It plays a recording, waits a fixed or random time, and repeats for hours with the screen locked. Read `docs/ARCHITECTURE.md` before changing playback behaviour.
+VoiceCycle is an offline Android app built with Expo SDK 57, React Native 0.86 and TypeScript. It plays a recording, waits a fixed or random time, and repeats with the screen locked. Read `docs/ARCHITECTURE.md` before changing playback behaviour.
 
 ## Architecture rules
 

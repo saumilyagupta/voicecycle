@@ -113,7 +113,7 @@ Rules:
 | Phone restarts | The session ends and is not resumed |
 | Recording file missing (app data cleared) | The app asks you to select the recording again |
 
-Automatic recovery after a kill or reboot is deliberately not implemented. Audio starting by itself in the middle of the night would be surprising, and the behaviour could not be tested reliably across phone brands.
+Automatic recovery after a kill or reboot is deliberately not implemented. Audio starting by itself without user action would be surprising, and the behaviour could not be tested reliably across phone brands.
 
 ## Data and privacy
 
@@ -131,7 +131,7 @@ src/components/                 Presentational UI pieces
 src/hooks/                      usePlayer (native state), useSettings (persistence)
 src/domain/                     Pure logic: time, settings validation, display text, reports
 src/services/                   AsyncStorage settings, recording import
-src/theme/                      Night colour themes
+src/theme/                      Colour themes
 modules/voicecycle-player/      Local Expo module with the native Android player
 plugins/withReleaseSigning.js   Optional release signing from Gradle properties
 docs/                           Architecture, building and testing guides

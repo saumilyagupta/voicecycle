@@ -55,7 +55,7 @@ class VoiceCyclePlayerModule : Module() {
     OnStopObserving(SNAPSHOT_EVENT) { CycleStore.removeListener(listener) }
     OnDestroy { CycleStore.removeListener(listener) }
 
-    // The service ticks every second only while the UI is visible, saving battery overnight.
+    // The service ticks every second only while the UI is visible, saving battery during long sessions.
     OnActivityEntersForeground { setUiVisible(true) }
     OnActivityEntersBackground { setUiVisible(false) }
     OnActivityDestroys { setUiVisible(false) }

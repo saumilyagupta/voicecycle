@@ -1,6 +1,6 @@
 # Contributing to VoiceCycle
 
-Thanks for your interest. Bug reports from real phones are the most valuable contribution, because overnight reliability differs between brands and Android versions.
+Thanks for your interest. Bug reports from real phones are the most valuable contribution, because background reliability differs between brands and Android versions.
 
 ## Reporting a bug
 

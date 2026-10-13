@@ -8,8 +8,8 @@ const clockTime = (epochMs: number): string => {
 };
 
 /**
- * One-line summary of the previous session, so the user can check in the morning
- * whether it ran through the night. Null when there is nothing worth showing.
+ * One-line summary of the previous session, so the user can check whether it
+ * ran to the end. Null when there is nothing worth showing.
  */
 export function describeReport(report: SessionReport | null): { tone: 'info' | 'warning' | 'error'; text: string } | null {
   if (!report || report.status === 'running') return null;
