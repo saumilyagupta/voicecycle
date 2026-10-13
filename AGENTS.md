@@ -1,41 +1,28 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+VoiceCycle is an offline Android app built with Expo SDK 57, React Native 0.86 and TypeScript. It plays a recording, waits a fixed or random time, and repeats for hours with the screen locked. Read `docs/ARCHITECTURE.md` before changing playback behaviour.
+
+## Architecture rules
+
+- **The native service owns playback.** `modules/voicecycle-player/android` contains a foreground media service that runs the whole cycle. JavaScript only renders snapshots and sends commands. Never add JavaScript timers that drive playback: Android suspends JavaScript in the background.
+- **`CycleStateMachine` is a pure reducer.** No Android imports. Time and random draws arrive inside events. Every new transition needs a JUnit test in `modules/voicecycle-player/android/src/test`.
+- **Single screen, no Expo Router.** Keep UI in `src/components`, pure logic in `src/domain`, side effects in `src/services` and `src/hooks`.
+- **`android/` is generated** by `expo prebuild` and not committed. Configure native behaviour in `app.json`, `plugins/`, or the local module.
+- **Offline by design.** No network calls, analytics or accounts.
 
 ## Expo has changed — do not trust your training data
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
-
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+Expo ships breaking changes every SDK release. Before writing code that touches an Expo or React Native API, read the matching versioned docs at `https://docs.expo.dev/versions/v57.0.0/`, or start from https://docs.expo.dev/llms.txt.
 
 ## Commands
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
-
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npx expo install <package>   # always use instead of npm add, so versions match the SDK
+npm run android              # build and install the development build
+npm start                    # Metro bundler
+npm run typecheck
+npm run lint
+npm test                     # Jest
+npm run test:native          # JUnit state machine tests (Windows script; use ./gradlew elsewhere)
+npm run build:apk            # release APK (Windows script)
 ```
 
-Run lint and typecheck before declaring any task done.
-
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+Run typecheck, lint and both test suites before declaring a task done. Update `README.md`, `docs/` and `CHANGELOG.md` when behaviour changes.

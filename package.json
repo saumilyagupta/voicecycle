@@ -1,7 +1,32 @@
 {
   "name": "voicecycle",
   "version": "1.0.0",
+  "description": "Offline Android app that plays a recording, waits a fixed or random time, and repeats all night with the screen locked.",
+  "author": "Saumilya JJ",
+  "license": "MIT",
+  "private": true,
+  "keywords": [
+    "android",
+    "expo",
+    "react-native",
+    "audio",
+    "sleep",
+    "repetition",
+    "foreground-service",
+    "offline"
+  ],
   "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "android:release": "expo run:android --variant release",
+    "build:apk": "cd android && gradlew.bat assembleRelease",
+    "test": "jest",
+    "test:native": "cd android && gradlew.bat :voicecycle-player:testDebugUnitTest",
+    "typecheck": "tsc --noEmit",
+    "lint": "expo lint",
+    "doctor": "expo-doctor"
+  },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.28",
@@ -22,18 +47,6 @@
     "jest-expo": "^57.0.6",
     "typescript": "~6.0.3"
   },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "android:release": "expo run:android --variant release",
-    "build:apk": "cd android && gradlew.bat assembleRelease",
-    "test": "jest",
-    "test:native": "cd android && gradlew.bat :voicecycle-player:testDebugUnitTest",
-    "typecheck": "tsc --noEmit",
-    "lint": "expo lint",
-    "doctor": "expo-doctor"
-  },
-  "private": true,
   "jest": {
     "preset": "jest-expo",
     "testPathIgnorePatterns": [

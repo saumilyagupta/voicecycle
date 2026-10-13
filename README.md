@@ -1,293 +1,163 @@
+<div align="center">
+
+<img src="docs/images/icon-256.png" width="112" alt="VoiceCycle icon" />
+
 # VoiceCycle
 
-VoiceCycle plays one of your own audio recordings, waits a set number of minutes after it ends, and plays it again from the beginning. It repeats until you stop it or the session timer runs out. It is built for overnight use with the screen locked.
+**Play. Wait. Repeat. All night.**
 
-Example: a 12-minute recording, a 10-minute wait and an 8-hour session give about 22 plays.
+An offline Android app that plays your own recording, waits, and plays it again for hours, even with the screen locked.
 
-Everything runs offline. There are no accounts, ads, analytics or network calls.
+[![Android 7.0+](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)](#install)
+[![Expo SDK 57](https://img.shields.io/badge/Expo%20SDK-57-000020?logo=expo&logoColor=white)](https://docs.expo.dev/)
+[![Offline](https://img.shields.io/badge/network-none-6FD3C1)](#privacy)
+[![License: MIT](https://img.shields.io/badge/license-MIT-9AA8FF)](LICENSE)
 
-## How it works
+[**Download the APK**](../../releases/latest) · [How it works](docs/ARCHITECTURE.md) · [Build from source](docs/BUILDING.md) · [Testing](docs/TESTING.md)
 
-The whole cycle runs inside a native Android **foreground media service**, not in JavaScript.
+</div>
 
-| Piece | Where | Job |
-|---|---|---|
-| `CycleStateMachine.kt` | `modules/voicecycle-player/android/...` | Pure, unit-tested transition logic for IDLE, PLAYING, WAITING, PAUSED, STOPPED |
-| `PlaybackService.kt` | same | Foreground service of type `mediaPlayback`. Owns `MediaPlayer`, the media session, audio focus, a partial wake lock and the timers |
-| `PlaybackNotification.kt` | same | Ongoing notification with Pause/Resume and Stop, plus lock-screen media controls. During the wait it shows a live countdown |
-| `VoiceCyclePlayerModule.kt` | same | Expo module bridge. Forwards commands and streams state snapshots to JS |
-| `src/` | TypeScript | UI, settings, file import. It only renders what the service reports |
+<p align="center">
+  <img src="docs/images/screen-playing.png" width="200" alt="Playing a recording" />
+  <img src="docs/images/screen-waiting.png" width="200" alt="Random wait countdown" />
+  <img src="docs/images/screen-settings.png" width="200" alt="Wait, plays in a row and session settings" />
+  <img src="docs/images/screen-ember.png" width="200" alt="Ember night theme" />
+</p>
 
-Why not `expo-audio` with a JavaScript timer? Android suspends the JavaScript thread when the app is in the background. A `setTimeout` that should fire after a 10-minute silent wait may fire hours late or not at all. The service keeps its own clock (`SystemClock.elapsedRealtime`) and holds a partial wake lock only while a session is playing or waiting, so the next play starts on time with the screen off. Media3's built-in session service was also rejected: it leaves the foreground state when playback pauses, and Android 12+ then refuses to restart playback from the background after the silent wait.
+## Why VoiceCycle
 
-The service is the single source of truth. The UI never runs its own playback timers, so reopening the app cannot start a duplicate loop. A second Start while a session is active is ignored by the state machine.
+You have a recording you want to hear again and again: affirmations, a language lesson, a lecture, a breathing exercise. Music players can loop it, but they can't leave a pause between plays. A JavaScript timer can, until Android puts the app to sleep and the next play never comes.
 
-### State machine
+VoiceCycle runs the whole cycle in a native Android media service. It keeps its own clock, so the next play starts on time after a silent wait of minutes or hours, with the screen off and the phone in Doze.
+
+## Features
+
+- **Repeat with a pause.** Your recording plays to the end, then VoiceCycle waits before playing it again from the beginning.
+- **Random waits.** Pick a minimum and maximum, for example 5 to 15 minutes. Every wait gets a new random length.
+- **Plays in a row.** Play the recording 2 or 3 times back to back before each wait, or let VoiceCycle pick a random count each round.
+- **Session timer.** Stop after 1, 2, 4, 6 or 8 hours, or any length up to 24 hours. The last play fades out gently.
+- **Works with the screen locked.** Verified with the screen off and Android Doze forced on.
+- **Lock-screen controls.** Pause, resume and stop from the notification or lock screen. The notification counts down to the next play.
+- **Polite with calls and other apps.** Pauses for a phone call and resumes after it. Pauses when another app starts music or headphones are unplugged.
+- **Morning report.** Next morning the app tells you whether the session finished, and how many times the recording played.
+- **Made for the dark.** Three night themes: Dusk, Black for OLED screens, and Ember with almost no blue light.
+- **Remembers everything.** Your recording and settings are still there next time.
+- **Completely offline.** No account, no ads, no analytics, no network access.
+
+## How a night looks
+
+With a 12-minute recording, a random wait of 5–15 minutes, 1–3 plays in a row, and an 8-hour session:
 
 ```
-IDLE/STOPPED --Start--> PLAYING --recording ends--> WAITING --wait elapses--> PLAYING ...
-PLAYING/WAITING --Pause--> PAUSED --Resume--> (back to where it was)
-any active state --Stop / session time up / error--> STOPPED
+22:30  ▶ play 1 of 2
+22:42  ▶ play 2 of 2
+22:54  · wait 8:36 (random)
+23:03  ▶ play 1 of 1
+23:15  · wait 13:02 (random)
+23:28  ▶ play 1 of 3
+  ...
+06:30  ■ session time is up, fade out
 ```
 
-Rules:
+## Install
 
-- The wait starts when the recording **ends**, never when it starts.
-- A wait of 0 replays immediately.
-- **Pause freezes everything**: the recording position, the wait countdown and the session timer. A session paused for an hour still has the same time left when resumed.
-- **Pause during the wait** keeps the remaining countdown. Resume continues it, then the recording plays from the beginning.
-- When the session timer reaches zero during a play, the recording fades out over 3 seconds and stops.
-- When a recording ends and the session time left is not longer than the wait, the session ends right away instead of waiting in silence for nothing.
-- Stop cancels playback, the pending wait and the session timer.
+1. Download `VoiceCycle-vX.Y.Z.apk` from the [latest release](../../releases/latest) on your Android phone.
+2. Open it. If Android asks, allow installs from your browser or file manager.
+3. If Play Protect warns about an unknown app, choose **More details**, then **Install anyway**. The APK is not on the Play Store.
+4. Open VoiceCycle and allow notifications. They power the lock-screen controls.
 
-### Interruptions
+Requires Android 7.0 or newer.
 
-| Event | Behaviour |
-|---|---|
-| Phone call or alarm during a play | Pauses. Resumes automatically when the call ends (Android 8+) |
-| Next play is due during a call | Waits for the call to end, then plays |
-| Another app starts playing music | Pauses and stays paused until you press Resume |
-| Headphones unplugged | Pauses |
-| Silent wait | Audio focus is released, so other apps may play during the wait |
-| App swiped away from Recents | The session keeps running. Stop it from the notification |
+## Quick start
 
-### What survives and what does not
+1. Tap **Select audio** and pick your recording.
+2. Choose **Wait between plays**: a preset, a custom value, or **Random** with a minimum and maximum.
+3. Choose **Plays in a row**: how many times it plays back to back before each wait.
+4. Choose **Session length**.
+5. Tap **Start** and lock your phone.
 
-| Situation | Result |
-|---|---|
-| Screen locked, app in background, other apps in use | Session continues. This is the supported case |
-| Android kills the app (aggressive battery saver, low memory) | The session ends. It is **not** restarted automatically. Next time you open the app it tells you the last session was cut off and after how many plays |
-| Phone restarts | The session ends and is not resumed |
-| Recording file deleted (app data cleared) | The app asks you to select the recording again |
-
-Automatic recovery after a kill or reboot is deliberately not implemented. Restarting audio in the middle of the night without user action would be surprising, and it could not be tested reliably.
-
-### Battery settings for overnight use
-
-The app does not ask for a battery-optimisation exemption. A foreground media service with a wake lock is normally enough. Some phone brands still kill background apps. If the app reports in the morning that a session was cut off:
-
-1. Open **Settings > Apps > VoiceCycle > Battery** and choose **Unrestricted** (wording varies: "Don't optimise", "No restrictions").
-2. On Samsung, remove VoiceCycle from **Sleeping apps** and **Deep sleeping apps** under Battery > Background usage limits.
-3. On Xiaomi, Oppo, Vivo, Huawei or OnePlus, also allow **Autostart** and lock the app in Recents. See https://dontkillmyapp.com for your model.
-4. Keep the phone charging overnight if possible. Battery Saver modes may restrict background work.
+> **First night tip:** try a 2-hour session first and check the morning report. Then follow the battery settings below if your phone needs them.
 
 ## Settings
 
-- **Wait between plays**: 0, 5, 10, 15, 20, 30 minutes, or a custom value from 0 to 240 minutes. Decimals are allowed, so `0.5` means 30 seconds, which is handy for testing.
-- **Session length**: 1, 2, 4, 6, 8 hours, or a custom value from 1 to 1440 minutes.
-- **Theme**: Dusk, Black (for OLED screens) or Ember (warm, low blue light).
+| Setting | Options | Notes |
+|---|---|---|
+| Wait between plays | 0, 5, 10, 15, 20, 30 min · Custom 0–240 min · Random min–max | Starts when the recording **ends**. Decimals allowed, so `0.5` is 30 seconds. 0 repeats immediately |
+| Plays in a row | 1×, 2×, 3× · Custom 1–50 · Random min–max | Random draws a new count for every round |
+| Session length | 1, 2, 4, 6, 8 h · Custom 1–1440 min | The app shows roughly how many plays fit |
+| Theme | Dusk, Black, Ember | Black suits OLED screens. Ember is warm and low in blue light |
 
-The selected recording, wait, session length and theme are saved. Picked recordings are copied into the app's private storage, so they stay playable even if the original file is moved. Settings are locked while a session runs and apply to the next one.
+**Pause** freezes everything: the recording, the wait countdown and the session timer. Settings are locked while a session runs and apply to the next one.
 
-## Windows setup
+## Overnight reliability
 
-You need Node.js LTS, a JDK 17 and the Android SDK. Android Studio is optional.
+VoiceCycle does not ask for a battery-optimisation exemption. A foreground media service is normally enough. Some phone brands still close background apps. If the morning report says a session was **cut off**:
 
-This machine already has:
+1. Open **Settings > Apps > VoiceCycle > Battery** and choose **Unrestricted** (also called "Don't optimise" or "No restrictions").
+2. **Samsung:** remove VoiceCycle from *Sleeping apps* and *Deep sleeping apps* under Battery > Background usage limits.
+3. **Xiaomi, Oppo, Vivo, Huawei, OnePlus:** also allow *Autostart* and lock the app in Recents. See [dontkillmyapp.com](https://dontkillmyapp.com) for your model.
+4. Keep the phone charging overnight if you can. Battery Saver may restrict background work.
 
-| Tool | Location |
+| Situation | What happens |
 |---|---|
-| JDK 17 (Temurin, portable) | `%LOCALAPPDATA%\vc-tools\jdk-17.0.20.1+1` |
-| Android SDK (platform 36, build-tools 36.0.0, platform-tools, NDK 27.1) | `%LOCALAPPDATA%\Android\Sdk` |
+| Screen locked, other apps in use | The session keeps running |
+| Phone call | Pauses, then resumes after the call |
+| Android closes the app, or the phone restarts | The session ends and does not restart on its own. The app tells you next time you open it |
 
-Make them permanent for your user account. Run once in PowerShell, then open a new terminal:
+## Supported audio
 
-```powershell
-$jdk = "$env:LOCALAPPDATA\vc-tools\jdk-17.0.20.1+1"
-$sdk = "$env:LOCALAPPDATA\Android\Sdk"
-[Environment]::SetEnvironmentVariable('JAVA_HOME', $jdk, 'User')
-[Environment]::SetEnvironmentVariable('ANDROID_HOME', $sdk, 'User')
-$path = [Environment]::GetEnvironmentVariable('Path', 'User')
-[Environment]::SetEnvironmentVariable('Path', "$jdk\bin;$sdk\platform-tools;$path", 'User')
-```
+Anything your phone's built-in Android player can decode, including MP3, M4A/AAC, WAV, FLAC, OGG, Opus and AMR. Most voice-recorder apps produce one of these. WMA, AIFF and ALAC usually don't play on Android, so convert them to MP3 or M4A first. The app checks every file when you select it.
 
-Check:
+## Privacy
 
-```powershell
-java -version      # must say 17
-adb --version
-```
+VoiceCycle has no network code, no analytics and no accounts. Your recording is copied into the app's private storage on your phone and never leaves it. The app asks only for notification, foreground service and wake lock permissions. Microphone access is explicitly blocked.
 
-If you install Android Studio instead, point `JAVA_HOME` at its bundled JDK (`C:\Program Files\Android\Android Studio\jbr`) and keep `ANDROID_HOME` as above.
+## Build from source
 
-Install JavaScript dependencies:
-
-```powershell
+```bash
 npm install
+npm run android        # development build on a connected phone
+npm run build:apk      # release APK (Windows; use ./gradlew assembleRelease in android/ elsewhere)
 ```
 
-## Run on your phone (development build)
+You need Node.js 20+, JDK 17 and the Android SDK. [docs/BUILDING.md](docs/BUILDING.md) covers setup on Windows, signing with your own key, the EAS cloud build and publishing releases.
 
-VoiceCycle contains native code, so it does **not** run in Expo Go.
+## Testing
 
-1. On the phone, enable Developer options and USB debugging.
-2. Connect it by USB and accept the debugging prompt.
-3. Check it is listed:
-
-```powershell
-adb devices
-```
-
-4. Build, install and start the development build. This also starts the Metro bundler:
-
-```powershell
-npm run android
-```
-
-After the first install you only need the bundler for JavaScript changes:
-
-```powershell
-npm start
-```
-
-Changes in `modules/voicecycle-player/android` or `app.json` need `npm run android` again.
-
-The `android/` folder is generated from `app.json` and the config plugins. Do not edit it by hand. Regenerate it with:
-
-```powershell
-npx expo prebuild --platform android --clean
-```
-
-## Checks
-
-```powershell
-npm test              # Jest: formatting, settings validation, display logic, signing plugin
-npm run test:native   # JUnit: playback state machine (needs JAVA_HOME and ANDROID_HOME)
+```bash
+npm test               # 50 Jest tests
+npm run test:native    # 31 JUnit tests for the playback state machine
 npm run typecheck
 npm run lint
 ```
 
-## Release APK
+CI runs all of them on every push. [docs/TESTING.md](docs/TESTING.md) has the emulator results, a 19-step manual test plan and an overnight checklist for real phones.
 
-```powershell
-npx expo prebuild --platform android   # only if android/ is missing
-npm run build:apk
+## How it works
+
+```mermaid
+flowchart LR
+  UI["React Native UI"] -- "start / pause / stop" --> Module["Expo module"]
+  Module --> Service["Foreground media service"]
+  Service --> SM["Pure state machine"]
+  Service -- "snapshots" --> UI
 ```
 
-The APK is written to:
+The native service owns playback, the wait and the session timer. The interface only shows what the service reports, so reopening the app can never start a second session. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains the design, the state machine and why simpler approaches fail overnight.
 
-```
-android\app\build\outputs\apk\release\app-release.apk
-```
+## Roadmap
 
-Install it on the connected phone:
+- [ ] Field reports from more phone brands
+- [ ] Choose several recordings and rotate between them
+- [ ] Optional restart of an interrupted session
+- [ ] Google Play release
 
-```powershell
-adb install -r android\app\build\outputs\apk\release\app-release.apk
-```
+iOS is not supported. The playback engine is Android-only.
 
-You can also copy the APK to the phone and open it there, after allowing installs from that source.
+## Contributing
 
-The APK is about 70 MB because it contains native code for all four CPU types. For a smaller file that installs on any modern 64-bit phone, build only `arm64-v8a`:
+Bug reports from real phones help most, especially overnight results. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and use the issue templates. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-```powershell
-cd android
-.\gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a
-```
+## License
 
-### Diagnostics
-
-Every state change of the playback service is logged. With the phone connected:
-
-```powershell
-adb logcat -s VoiceCycle:I
-```
-
-Example output from an emulator test with the screen off and Doze forced on:
-
-```
-IDLE -> PLAYING on Start effects=[START_FROM_BEGINNING] reps=0 sessionLeftMs=90000
-PLAYING -> WAITING on PlaybackCompleted effects=[ENTER_WAIT] reps=1 sessionLeftMs=74602
-WAITING -> PLAYING on Tick effects=[START_FROM_BEGINNING] reps=1 sessionLeftMs=59546
-...
-PLAYING -> STOPPED on PlaybackCompleted effects=[STOP_PLAYER] reps=3 sessionLeftMs=14176 reason=SESSION_COMPLETE
-```
-
-### Signing
-
-Without extra setup, the release APK is signed with the debug key. That is fine for installing on your own phone. Note that Android refuses to update an app signed with a different key, so pick one approach and stick to it.
-
-To sign with your own key, create a keystore once and keep it outside the project:
-
-```powershell
-keytool -genkeypair -v -storetype PKCS12 -keystore "$env:USERPROFILE\.android-keys\voicecycle.jks" -alias voicecycle -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Then add these lines to `%USERPROFILE%\.gradle\gradle.properties`. That file is in your user folder, never in the repository:
-
-```properties
-VOICECYCLE_UPLOAD_STORE_FILE=C:/Users/YOUR_NAME/.android-keys/voicecycle.jks
-VOICECYCLE_UPLOAD_STORE_PASSWORD=your-store-password
-VOICECYCLE_UPLOAD_KEY_ALIAS=voicecycle
-VOICECYCLE_UPLOAD_KEY_PASSWORD=your-key-password
-```
-
-The config plugin `plugins/withReleaseSigning.js` uses them automatically when present. Back up the keystore. Losing it means you cannot update the installed app without uninstalling it first.
-
-### Cloud build alternative (EAS)
-
-If the local build fails, Expo can build the APK in the cloud. It needs a free Expo account.
-
-```powershell
-npx eas-cli@latest login
-npx eas-cli@latest build:configure
-```
-
-In the generated `eas.json`, give the `preview` profile `"android": { "buildType": "apk" }`, then run:
-
-```powershell
-npx eas-cli@latest build --platform android --profile preview
-```
-
-## Test procedure
-
-Use a short recording (20 to 60 seconds) and short settings so each test takes minutes. A custom wait of `0.5` gives 30 seconds. A custom session of `3` gives 3 minutes. Watch the status, countdown and "Plays completed" in the app or the notification.
-
-| # | Test | Steps | Expected |
-|---|---|---|---|
-| 1 | Short recording with short wait | Wait 0.5, session 10, Start | Recording plays to the end, status shows Waiting with a 0:30 countdown, then it plays again from 0:00 |
-| 2 | Multiple repetitions | Same as 1 for 5 minutes | Plays completed increases by one after each play. No overlap or skipped waits |
-| 3 | Zero wait | Wait 0, Start | The recording restarts right after it ends. Count increases each time |
-| 4 | Pause during playback | Pause at 0:10 | Audio stops. Status Paused. Session time left stops decreasing |
-| 5 | Pause during the wait | Pause with 0:20 left in the wait | Countdown freezes at about 0:20 and the next play does not start |
-| 6 | Resume after pause | Resume after tests 4 and 5 | 4 continues from 0:10. 5 continues the countdown, then plays from the beginning |
-| 7 | Stop during playback | Stop mid-recording | Audio stops at once. Notification disappears. Status Stopped |
-| 8 | Stop during the wait | Stop while waiting, then wait longer than the wait time | Nothing plays again |
-| 9 | Session expiry | Wait 0.5, session 2 | Within 2 minutes of active time the audio fades out or the session ends at a recording end. Status Stopped, "Session time is up" |
-| 10 | Screen locked during playback | Start, lock the phone | Audio continues. The next play after the wait is heard with the screen off |
-| 11 | Screen locked during the wait | Lock the phone while Waiting | The next play starts on time. Lock-screen controls show Pause and Stop |
-| 12 | Switch apps | Open other apps during play and wait | The cycle continues. Starting music in another app pauses VoiceCycle |
-| 13 | Inaccessible file | Settings > Apps > VoiceCycle > Storage > Clear storage, reopen the app | The app asks you to select a recording again. Start is disabled until you do |
-| 14 | No duplicate playback | During a session, leave the app and reopen it several times, also from the notification | One audio stream only. The app shows the same state as the notification |
-| 15 | Interruptions | Call the phone during a play | Pauses during the call and resumes afterwards |
-| 16 | Notification controls | Use Pause, Resume and Stop from the notification and lock screen | Same effect as the in-app buttons |
-
-### Overnight checklist (physical device only)
-
-An emulator run does not prove overnight reliability. Before relying on the app:
-
-- [ ] Install the **release** APK, not the development build. Debug builds are slower and depend on the bundler.
-- [ ] Allow notifications when asked.
-- [ ] Apply the battery settings above for your phone brand.
-- [ ] First night: a 2-hour session with your real recording and wait, phone locked and unplugged.
-- [ ] In the morning, open the app. The note under the status says whether the last session finished, and after how many plays. Compare with the plays estimate shown under Session length.
-- [ ] Repeat with the phone charging, and with Battery Saver on if you use it at night.
-- [ ] Only then rely on a full 8-hour session.
-
-## Project layout
-
-```
-App.tsx                         Root component
-src/screens/HomeScreen.tsx      The single screen
-src/components/                 Presentational UI pieces
-src/hooks/                      usePlayer (native state), useSettings (persistence)
-src/domain/                     Pure logic: time formatting, settings validation, display text
-src/services/                   AsyncStorage settings, recording import
-src/theme/                      Night colour themes
-modules/voicecycle-player/      Local Expo module with the native Android player
-plugins/withReleaseSigning.js   Optional release signing from Gradle properties
-```
-
-The app has a single screen, so Expo Router is not used.
-
-iOS is not supported. The native player is Android-only.
+[MIT](LICENSE) © 2026 Saumilya JJ

@@ -1,0 +1,40 @@
+name: Release APK
+
+# Push a tag such as v1.0.0 to build the APK and attach it to a GitHub Release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npm test -- --ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease
+      - name: Name the APK after the tag
+        run: cp android/app/build/outputs/apk/release/app-release.apk "VoiceCycle-${GITHUB_REF_NAME}.apk"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: VoiceCycle-${{ github.ref_name }}.apk
+          generate_release_notes: true
+          body: |
+            Download the APK below and open it on your Android phone (Android 7.0 or newer).
+            This build is signed with a CI debug key. If you installed an earlier release, uninstall it first.
+            See the README for battery settings that help overnight playback.
