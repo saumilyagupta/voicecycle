@@ -21,7 +21,8 @@ export function RecordingCard({ recording, snapshot, theme, isBusy, isLocked, on
   const { colors } = theme;
   const showLive = snapshot.state === 'PLAYING' || snapshot.state === 'PAUSED' || snapshot.state === 'WAITING';
   const durationMs = showLive && snapshot.durationMs > 0 ? snapshot.durationMs : recording?.durationMs ?? 0;
-  const positionMs = showLive ? (snapshot.state === 'WAITING' ? durationMs : snapshot.positionMs) : 0;
+  const finishedThisRound = snapshot.state === 'WAITING' && !snapshot.inStartDelay;
+  const positionMs = showLive ? (finishedThisRound ? durationMs : snapshot.positionMs) : 0;
   const progress = showLive ? recordingProgress(snapshot) : 0;
 
   return (

@@ -15,6 +15,8 @@ export type StoredRecording = {
 };
 
 export type Settings = {
+  /** Silent countdown after Start, before the first play, in minutes. 0 means off. */
+  startDelayMinutes: number;
   /** Fixed wait after each round, in minutes. */
   intervalMinutes: number;
   waitMode: ValueMode;
@@ -30,10 +32,12 @@ export type Settings = {
   recording: StoredRecording | null;
 };
 
+export const START_DELAY_PRESETS_MIN = [0, 10, 20, 30] as const;
 export const INTERVAL_PRESETS_MIN = [0, 5, 10, 15, 20, 30] as const;
 export const PLAYS_PRESETS = [1, 2, 3] as const;
 export const SESSION_PRESETS_MIN = [60, 120, 240, 360, 480] as const;
 
+export const START_DELAY_LIMITS = { min: 0, max: 240 } as const;
 export const INTERVAL_LIMITS = { min: 0, max: 240 } as const;
 export const PLAYS_LIMITS = { min: 1, max: 50 } as const;
 export const SESSION_LIMITS = { min: 1, max: 1440 } as const;
@@ -41,6 +45,7 @@ export const SESSION_LIMITS = { min: 1, max: 1440 } as const;
 export const THEME_IDS: readonly ThemeId[] = ['dusk', 'black', 'ember'];
 
 export const DEFAULT_SETTINGS: Settings = {
+  startDelayMinutes: 0,
   intervalMinutes: 10,
   waitMode: 'fixed',
   waitRange: { min: 5, max: 15 },
@@ -106,6 +111,9 @@ export function parseSettings(raw: unknown): Settings {
   const data = raw as Record<string, unknown>;
   const plays = data.playsPerRound;
   return {
+    startDelayMinutes: isWithin(data.startDelayMinutes, START_DELAY_LIMITS)
+      ? data.startDelayMinutes
+      : DEFAULT_SETTINGS.startDelayMinutes,
     intervalMinutes: isWithin(data.intervalMinutes, INTERVAL_LIMITS)
       ? data.intervalMinutes
       : DEFAULT_SETTINGS.intervalMinutes,
@@ -146,6 +154,7 @@ export function toCycleOptions(settings: Settings): CycleOptions {
     playsMin: plays.min,
     playsMax: plays.max,
     sessionMs: Math.round(settings.sessionMinutes * MS_PER_MINUTE),
+    startDelayMs: Math.round(settings.startDelayMinutes * MS_PER_MINUTE),
   };
 }
 

@@ -20,9 +20,12 @@ sealed class CycleEvent {
 /**
  * Pure transition function for the repetition cycle:
  *
- *   IDLE/STOPPED -start-> PLAYING x N (one round) -round ends-> WAITING -wait elapses-> PLAYING ...
+ *   IDLE/STOPPED -start-> [WAITING: start delay] -> PLAYING x N (one round) -round ends->
+ *   WAITING -wait elapses-> PLAYING ...
  *
  * Rules:
+ * - An optional start delay counts down silently before the first play. The session
+ *   timer only starts when the delay ends. Pause and Stop work during it as in any wait.
  * - A round is N back-to-back plays. N and the following wait may be random; they are
  *   drawn outside this pure function and passed in with the events.
  * - The wait starts when the last play of a round finishes, not when it starts.
@@ -55,14 +58,25 @@ object CycleStateMachine {
 
   private fun start(model: CycleModel, event: CycleEvent.Start): Transition {
     if (model.isActive) return Transition(model)
-    val next = CycleModel(
+    val config = event.config
+    val playing = CycleModel(
       state = CycleState.PLAYING,
-      config = event.config,
-      sessionRemainingMs = event.config.sessionMs,
+      config = config,
+      sessionRemainingMs = config.sessionMs,
       anchorMs = event.nowMs,
-      roundTarget = clampPlays(event.firstRoundPlays, event.config),
+      roundTarget = clampPlays(event.firstRoundPlays, config),
     )
-    return Transition(next, listOf(Effect.START_FROM_BEGINNING))
+    if (config.startDelayMs == 0L) {
+      return Transition(playing, listOf(Effect.START_FROM_BEGINNING))
+    }
+    // Nothing to do on the player yet: it is prepared and silent until the delay ends.
+    val delayed = playing.copy(
+      state = CycleState.WAITING,
+      inStartDelay = true,
+      waitRemainingMs = config.startDelayMs,
+      currentWaitMs = config.startDelayMs,
+    )
+    return Transition(delayed)
   }
 
   private fun completed(model: CycleModel, event: CycleEvent.PlaybackCompleted): Transition {
@@ -111,8 +125,9 @@ object CycleStateMachine {
       model.sessionRemainingAt(nowMs) <= 0 ->
         finish(model.rebase(nowMs), nowMs, EndReason.SESSION_COMPLETE, Effect.STOP_PLAYER, null)
       model.waitRemainingAt(nowMs) <= 0 ->
+        // Rebase first so a start delay never counts against the session clock.
         Transition(
-          model.rebase(nowMs).copy(state = CycleState.PLAYING, waitRemainingMs = 0),
+          model.rebase(nowMs).copy(state = CycleState.PLAYING, waitRemainingMs = 0, inStartDelay = false),
           listOf(Effect.START_FROM_BEGINNING),
         )
       else -> Transition(model)
@@ -162,6 +177,7 @@ object CycleStateMachine {
       state = CycleState.STOPPED,
       anchorMs = nowMs,
       waitRemainingMs = 0,
+      inStartDelay = false,
       pausedFrom = null,
       pauseReason = null,
       endReason = reason,

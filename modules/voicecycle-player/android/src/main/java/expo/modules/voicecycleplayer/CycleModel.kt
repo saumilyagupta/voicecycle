@@ -29,6 +29,9 @@ enum class Effect {
  * A round is [playsMin]..[playsMax] back-to-back plays of the recording. After each
  * round comes one silent wait of [intervalMinMs]..[intervalMaxMs]. Both are drawn
  * again for every round.
+ *
+ * [startDelayMs] is a silent countdown after Start, before the first play. The session
+ * timer starts only when it ends, so the session length is all playback time.
  */
 data class CycleConfig(
   val intervalMinMs: Long,
@@ -36,8 +39,10 @@ data class CycleConfig(
   val sessionMs: Long,
   val playsMin: Int = 1,
   val playsMax: Int = playsMin,
+  val startDelayMs: Long = 0,
 ) {
   init {
+    require(startDelayMs >= 0) { "startDelayMs must be >= 0" }
     require(intervalMinMs >= 0) { "intervalMinMs must be >= 0" }
     require(intervalMaxMs >= intervalMinMs) { "intervalMaxMs must be >= intervalMinMs" }
     require(sessionMs > 0) { "sessionMs must be > 0" }
@@ -57,7 +62,8 @@ data class Draw(val waitMs: Long, val roundPlays: Int)
 /**
  * Immutable session model. Remaining times are stored relative to [anchorMs]
  * (a SystemClock.elapsedRealtime() value). The session clock runs only in
- * PLAYING and WAITING. The wait clock runs only in WAITING. Pausing freezes both.
+ * PLAYING and WAITING, except during the start delay. The wait clock runs only in
+ * WAITING. Pausing freezes both.
  */
 data class CycleModel(
   val state: CycleState = CycleState.IDLE,
@@ -69,6 +75,8 @@ data class CycleModel(
   val roundTarget: Int = 1,
   /** Full length of the current (or most recent) wait, for display. */
   val currentWaitMs: Long = 0,
+  /** True while counting down the start delay, before the first play. */
+  val inStartDelay: Boolean = false,
   val sessionRemainingMs: Long = 0,
   val waitRemainingMs: Long = 0,
   val anchorMs: Long = 0,
@@ -81,7 +89,7 @@ data class CycleModel(
     get() = state == CycleState.PLAYING || state == CycleState.WAITING || state == CycleState.PAUSED
 
   fun sessionRemainingAt(nowMs: Long): Long {
-    val running = state == CycleState.PLAYING || state == CycleState.WAITING
+    val running = !inStartDelay && (state == CycleState.PLAYING || state == CycleState.WAITING)
     val elapsed = if (running) (nowMs - anchorMs).coerceAtLeast(0) else 0
     return (sessionRemainingMs - elapsed).coerceAtLeast(0)
   }

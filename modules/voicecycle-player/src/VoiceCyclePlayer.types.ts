@@ -16,6 +16,9 @@ export type PlayerSnapshot = {
   roundTarget: number;
   /** Full length of the current or most recent wait. */
   currentWaitMs: number;
+  /** True while counting down the start delay, before the first play. */
+  inStartDelay: boolean;
+  startDelayMs: number;
   positionMs: number;
   durationMs: number;
   waitRemainingMs: number;
@@ -35,6 +38,8 @@ export type CycleOptions = {
   playsMin: number;
   playsMax: number;
   sessionMs: number;
+  /** Silent countdown before the first play. The session timer starts after it. */
+  startDelayMs: number;
 };
 
 export type StartOptions = CycleOptions & {

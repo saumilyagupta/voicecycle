@@ -11,9 +11,10 @@ npm run lint
 
 | Suite | Tests | Covers |
 |---|---|---|
-| Jest | 50 | Settings parsing and migration, custom input parsing, plays estimate, status text, session reports, release signing plugin |
+| Jest | 57 | Settings parsing and migration, custom input parsing, start delay, plays estimate, status text, session reports, release signing plugin |
 | JUnit `CycleStateMachineTest` | 20 | Start, wait timing, pause and resume in every state, stop, session expiry, interruptions, duplicate start |
 | JUnit `RoundsAndRandomTest` | 11 | Back-to-back rounds, random waits, random round sizes, clamping, draw ranges and edge cases |
+| JUnit `StartDelayTest` | 9 | Silent delay before the first play, frozen session clock, pause, resume and stop during the delay, duplicate start |
 
 The same checks run on every push through `.github/workflows/ci.yml`.
 
@@ -59,6 +60,8 @@ Use a short recording (20 to 60 seconds) and short settings so each test takes m
 | 17 | Random wait | Wait Random, min 0.1 and max 0.4, session 3 | Each wait is a different length between 6 and 24 seconds. Status shows "Random wait of 0:17 this time" |
 | 18 | Plays in a row | Plays in a row 3, wait 0.25 | The recording plays 3 times back to back, then waits 15 seconds. Status shows "Play 2 of 3 in this round" |
 | 19 | Random plays in a row | Plays in a row Random, 1 to 3 | Rounds of 1, 2 or 3 plays in varying order |
+| 20 | Start delay | Start delay custom 0.25, wait 0.25, session 2, Start, lock the phone | Status "Starting soon" with a 0:15 "First play in" countdown and silence. Then the first play, and "Session left" only starts going down from there |
+| 21 | Pause and Stop during the start delay | Start delay 10, Pause, Resume, then Stop | The countdown freezes while paused and continues on Resume. Stop ends the session with 0 plays and nothing is played |
 
 ## Long-session checklist (physical phone)
 

@@ -27,6 +27,7 @@ class StartOptions : Record {
   @Field val intervalMaxMs: Double = -1.0
   @Field val playsMin: Int = 1
   @Field val playsMax: Int = 1
+  @Field val startDelayMs: Double = 0.0
   @Field val sessionMs: Double = -1.0
 }
 
@@ -81,6 +82,7 @@ class VoiceCyclePlayerModule : Module() {
         .putExtra(PlaybackService.EXTRA_INTERVAL_MAX_MS, options.intervalMaxMs.toLong())
         .putExtra(PlaybackService.EXTRA_PLAYS_MIN, options.playsMin)
         .putExtra(PlaybackService.EXTRA_PLAYS_MAX, options.playsMax)
+        .putExtra(PlaybackService.EXTRA_START_DELAY_MS, options.startDelayMs.toLong())
         .putExtra(PlaybackService.EXTRA_SESSION_MS, options.sessionMs.toLong())
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         context.startForegroundService(intent)
@@ -109,6 +111,9 @@ class VoiceCyclePlayerModule : Module() {
     val (minWait, maxWait) = options.intervalMinMs to options.intervalMaxMs
     if (minWait.isNaN() || maxWait.isNaN() || minWait < 0 || maxWait > MAX_INTERVAL_MS || maxWait < minWait) {
       throw InvalidOptionsException("Wait must be between 0 and 24 hours, with minimum not above maximum")
+    }
+    if (options.startDelayMs.isNaN() || options.startDelayMs < 0 || options.startDelayMs > MAX_INTERVAL_MS) {
+      throw InvalidOptionsException("Start delay must be between 0 and 24 hours")
     }
     if (options.playsMin < 1 || options.playsMax > MAX_PLAYS_PER_ROUND || options.playsMax < options.playsMin) {
       throw InvalidOptionsException("Plays in a row must be between 1 and $MAX_PLAYS_PER_ROUND, with minimum not above maximum")

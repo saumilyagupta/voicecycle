@@ -23,6 +23,8 @@ data class PlayerSnapshot(
     "playsInRound" to model.playsInRound,
     "roundTarget" to model.roundTarget,
     "currentWaitMs" to model.currentWaitMs.toDouble(),
+    "inStartDelay" to model.inStartDelay,
+    "startDelayMs" to (model.config?.startDelayMs ?: 0L).toDouble(),
     "positionMs" to positionMs.toDouble(),
     "durationMs" to durationMs.toDouble(),
     "waitRemainingMs" to model.waitRemainingAt(nowMs).toDouble(),

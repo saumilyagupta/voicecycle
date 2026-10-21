@@ -11,6 +11,8 @@ export const IDLE_SNAPSHOT: PlayerSnapshot = {
   playsInRound: 0,
   roundTarget: 1,
   currentWaitMs: 0,
+  inStartDelay: false,
+  startDelayMs: 0,
   positionMs: 0,
   durationMs: 0,
   waitRemainingMs: 0,
@@ -42,7 +44,9 @@ export function describeStatus(snapshot: PlayerSnapshot): StatusText {
     case 'PLAYING':
       return { title: 'Playing', detail: playingDetail(snapshot) };
     case 'WAITING':
-      return { title: 'Waiting', detail: waitingDetail(snapshot) };
+      return snapshot.inStartDelay
+        ? { title: 'Starting soon', detail: 'Start delay. The session begins when the countdown ends' }
+        : { title: 'Waiting', detail: waitingDetail(snapshot) };
     case 'PAUSED':
       return { title: 'Paused', detail: pauseDetail(snapshot) };
     case 'STOPPED':
@@ -71,7 +75,11 @@ function waitingDetail(snapshot: PlayerSnapshot): string {
 }
 
 function pauseDetail(snapshot: PlayerSnapshot): string {
-  const during = snapshot.pausedFrom === 'WAITING' ? 'Countdown paused' : 'Recording paused';
+  const during = snapshot.inStartDelay
+    ? 'Start delay paused'
+    : snapshot.pausedFrom === 'WAITING'
+      ? 'Countdown paused'
+      : 'Recording paused';
   switch (snapshot.pauseReason) {
     case 'INTERRUPTION':
       return `${during} by a call or alert. It resumes automatically.`;
@@ -97,6 +105,7 @@ function endDetail(snapshot: PlayerSnapshot): string {
 
 /** Fraction of the recording played, 0..1. A finished recording reads as full while waiting. */
 export function recordingProgress(snapshot: PlayerSnapshot): number {
+  if (snapshot.inStartDelay) return 0;
   if (snapshot.state === 'WAITING') return 1;
   if (snapshot.durationMs <= 0) return 0;
   return Math.min(1, Math.max(0, snapshot.positionMs / snapshot.durationMs));
@@ -105,7 +114,9 @@ export function recordingProgress(snapshot: PlayerSnapshot): number {
 /** Countdown shown in the hero: next play while waiting, otherwise recording time left. */
 export function heroCountdownMs(snapshot: PlayerSnapshot): { label: string; ms: number } | null {
   const waiting = snapshot.state === 'WAITING' || (snapshot.state === 'PAUSED' && snapshot.pausedFrom === 'WAITING');
-  if (waiting) return { label: 'Next play in', ms: snapshot.waitRemainingMs };
+  if (waiting) {
+    return { label: snapshot.inStartDelay ? 'First play in' : 'Next play in', ms: snapshot.waitRemainingMs };
+  }
   if (snapshot.state === 'PLAYING' || snapshot.state === 'PAUSED') {
     return { label: 'Recording left', ms: Math.max(0, snapshot.durationMs - snapshot.positionMs) };
   }

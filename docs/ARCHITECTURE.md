@@ -70,6 +70,8 @@ stateDiagram-v2
   [*] --> IDLE
   IDLE --> PLAYING: Start
   STOPPED --> PLAYING: Start
+  IDLE --> WAITING: Start with start delay
+  STOPPED --> WAITING: Start with start delay
   PLAYING --> PLAYING: play ends, round not finished
   PLAYING --> WAITING: last play of round ends
   WAITING --> PLAYING: wait elapses (next round)
@@ -84,11 +86,12 @@ stateDiagram-v2
 
 Rules:
 
+- An optional **start delay** is a silent WAITING phase before the first play, flagged with `inStartDelay`. The session timer does not run during it and starts when the first play begins. Pause and Stop behave as in any wait.
 - A **round** is N back-to-back plays, where N is "Plays in a row". The wait comes after the last play of a round.
 - The wait starts when the recording **ends**, never when it starts.
 - A wait of 0 starts the next round immediately.
 - **Random** waits and round sizes are drawn again for every round. The service draws them with `CycleRandom` and passes them into the reducer with the event, so the reducer stays pure and testable. Every value in the range, both ends included, is possible. Random waits are whole seconds.
-- **Pause freezes everything**: the recording position, the wait countdown and the session timer. Resuming a pause taken during a wait continues the remaining countdown.
+- **Pause freezes everything**: the recording position, the start delay, the wait countdown and the session timer. Resuming a pause taken during a wait continues the remaining countdown.
 - When the session timer reaches zero during a play, the recording fades out over 3 seconds.
 - When a round ends and the session time left is not longer than the next wait, the session ends at once instead of waiting in silence for nothing.
 - Stop cancels playback, the pending wait and the session timer.

@@ -102,6 +102,29 @@ describe('parseSettings', () => {
   });
 });
 
+describe('start delay', () => {
+  it('defaults to off, including for settings saved before the option existed', () => {
+    expect(DEFAULT_SETTINGS.startDelayMinutes).toBe(0);
+    expect(parseSettings({ intervalMinutes: 5 }).startDelayMinutes).toBe(0);
+  });
+
+  it('keeps a valid delay and rejects out-of-range values', () => {
+    expect(parseSettings({ startDelayMinutes: 20 }).startDelayMinutes).toBe(20);
+    expect(parseSettings({ startDelayMinutes: -5 }).startDelayMinutes).toBe(0);
+    expect(parseSettings({ startDelayMinutes: 999 }).startDelayMinutes).toBe(0);
+  });
+
+  it('is sent to the player in milliseconds', () => {
+    expect(toCycleOptions(settings({ startDelayMinutes: 30 })).startDelayMs).toBe(1_800_000);
+    expect(toCycleOptions(settings({ startDelayMinutes: 0.25 })).startDelayMs).toBe(15_000);
+  });
+
+  it('does not change the plays estimate, because the session starts after it', () => {
+    const base = settings({ intervalMinutes: 10, sessionMinutes: 480 });
+    expect(estimatePlays(12 * 60_000, { ...base, startDelayMinutes: 30 })).toBe(estimatePlays(12 * 60_000, base));
+  });
+});
+
 describe('toCycleOptions', () => {
   it('sends a fixed wait and fixed plays as single-value ranges', () => {
     expect(toCycleOptions(settings({ intervalMinutes: 10, playsPerRound: 2, sessionMinutes: 60 }))).toEqual({
@@ -110,6 +133,7 @@ describe('toCycleOptions', () => {
       playsMin: 2,
       playsMax: 2,
       sessionMs: 3_600_000,
+      startDelayMs: 0,
     });
   });
 

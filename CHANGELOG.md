@@ -2,6 +2,12 @@
 
 All notable changes to VoiceCycle are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Start delay**: press Start and let the first play begin after Off, 10, 20, 30 minutes or a custom delay up to 240 minutes. The session timer starts when the first play begins. Pause and Stop work during the countdown, and the notification shows "Starting soon".
+
 ## [1.0.1] - 2026-10-13
 
 ### Changed

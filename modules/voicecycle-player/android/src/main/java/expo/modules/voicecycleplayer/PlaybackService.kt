@@ -45,6 +45,7 @@ class PlaybackService : Service() {
     const val EXTRA_INTERVAL_MAX_MS = "intervalMaxMs"
     const val EXTRA_PLAYS_MIN = "playsMin"
     const val EXTRA_PLAYS_MAX = "playsMax"
+    const val EXTRA_START_DELAY_MS = "startDelayMs"
     const val EXTRA_SESSION_MS = "sessionMs"
 
     /** Tick rate while the app is on screen, so progress and countdowns update every second. */
@@ -173,6 +174,7 @@ class PlaybackService : Service() {
     val intervalMaxMs = intent.getLongExtra(EXTRA_INTERVAL_MAX_MS, -1)
     val playsMin = intent.getIntExtra(EXTRA_PLAYS_MIN, 1)
     val playsMax = intent.getIntExtra(EXTRA_PLAYS_MAX, playsMin)
+    val startDelayMs = intent.getLongExtra(EXTRA_START_DELAY_MS, 0)
     val sessionMs = intent.getLongExtra(EXTRA_SESSION_MS, -1)
 
     // Every startForegroundService() call must be answered with startForeground(),
@@ -188,7 +190,7 @@ class PlaybackService : Service() {
     fading = false
     lastNotificationKey = null
     val config = try {
-      CycleConfig(intervalMinMs, intervalMaxMs, sessionMs, playsMin, playsMax)
+      CycleConfig(intervalMinMs, intervalMaxMs, sessionMs, playsMin, playsMax, startDelayMs)
     } catch (e: IllegalArgumentException) {
       return failBeforeStart("Invalid session settings: ${e.message}")
     }
@@ -243,6 +245,7 @@ class PlaybackService : Service() {
         "${previous.state} -> ${model.state} on ${event::class.simpleName} " +
           "effects=${transition.effects} reps=${model.completedRepetitions} " +
           "round=${model.playsInRound}/${model.roundTarget} waitMs=${model.currentWaitMs} " +
+          "startDelay=${model.inStartDelay} " +
           "sessionLeftMs=${model.sessionRemainingAt(event.nowMs)} reason=${model.pauseReason ?: model.endReason}",
       )
     }
@@ -395,7 +398,7 @@ class PlaybackService : Service() {
   private fun publish() {
     val nowMs = now()
     val position = when (model.state) {
-      CycleState.WAITING -> durationMs
+      CycleState.WAITING -> if (model.inStartDelay) 0L else durationMs
       CycleState.PLAYING, CycleState.PAUSED -> runCatching { player?.currentPosition?.toLong() }.getOrNull() ?: 0L
       else -> 0L
     }

@@ -80,7 +80,7 @@ object PlaybackNotification {
         } else {
           "Playing · $reps"
         }
-      CycleState.WAITING -> "Waiting for next play · $reps"
+      CycleState.WAITING -> if (model.inStartDelay) "Starting soon" else "Waiting for next play · $reps"
       CycleState.PAUSED -> when (model.pauseReason) {
         PauseReason.INTERRUPTION -> "Paused by interruption · $reps"
         else -> "Paused · $reps"

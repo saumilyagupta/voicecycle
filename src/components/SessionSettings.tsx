@@ -10,6 +10,8 @@ import {
   PLAYS_PRESETS,
   SESSION_LIMITS,
   SESSION_PRESETS_MIN,
+  START_DELAY_LIMITS,
+  START_DELAY_PRESETS_MIN,
   type Settings,
 } from '../domain/settings';
 import { formatMinutes } from '../domain/time';
@@ -24,6 +26,7 @@ type Props = {
 };
 
 const formatPlays = (count: number): string => `${count}×`;
+const formatDelay = (minutes: number): string => (minutes === 0 ? 'Off' : formatMinutes(minutes));
 const rangeMessage = (limits: { min: number; max: number }) => `Enter a number from ${limits.min} to ${limits.max}`;
 
 export function SessionSettings({ settings, isLocked, theme, onChange }: Props) {
@@ -34,6 +37,22 @@ export function SessionSettings({ settings, isLocked, theme, onChange }: Props) 
 
   return (
     <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <OptionPicker
+        title="Start delay"
+        hint="Countdown after you press Start. The first play and the session timer begin when it ends."
+        value={settings.startDelayMinutes}
+        presets={START_DELAY_PRESETS_MIN}
+        presetLabel={(m) => (m === 0 ? 'Off' : `${m}m`)}
+        formatValue={formatDelay}
+        parseInput={(text) => parseMinutesInput(text, START_DELAY_LIMITS)}
+        invalidMessage={rangeMessage(START_DELAY_LIMITS)}
+        unitLabel="minutes"
+        keyboardType="decimal-pad"
+        disabled={isLocked}
+        theme={theme}
+        onChange={(startDelayMinutes) => onChange({ startDelayMinutes })}
+      />
+      <View style={[styles.separator, { backgroundColor: colors.border }]} />
       <OptionPicker
         title="Wait between plays"
         hint="Silence after the recording ends, before it starts again. 0 repeats immediately. Random picks a new wait each time."

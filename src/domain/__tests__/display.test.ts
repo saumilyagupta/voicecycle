@@ -113,6 +113,25 @@ describe('describeReport', () => {
   });
 });
 
+describe('start delay', () => {
+  const delayed = snap({ state: 'WAITING', inStartDelay: true, waitRemainingMs: 600_000, durationMs: 60_000 });
+
+  it('shows a starting-soon status with a first-play countdown', () => {
+    expect(describeStatus(delayed).title).toBe('Starting soon');
+    expect(heroCountdownMs(delayed)).toEqual({ label: 'First play in', ms: 600_000 });
+  });
+
+  it('shows the recording as not yet played', () => {
+    expect(recordingProgress(delayed)).toBe(0);
+  });
+
+  it('names the start delay when paused during it', () => {
+    const paused = snap({ state: 'PAUSED', pausedFrom: 'WAITING', inStartDelay: true, waitRemainingMs: 300_000 });
+    expect(describeStatus(paused).detail).toBe('Start delay paused');
+    expect(heroCountdownMs(paused)?.label).toBe('First play in');
+  });
+});
+
 describe('rounds and random waits', () => {
   it('shows the position in a multi-play round', () => {
     const status = describeStatus(snap({ state: 'PLAYING', playsInRound: 1, roundTarget: 3 }));

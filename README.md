@@ -35,6 +35,7 @@ VoiceCycle runs the whole cycle in a native Android media service. It keeps its 
 - **Repeat with a pause.** Your recording plays to the end, then VoiceCycle waits before playing it again from the beginning.
 - **Random waits.** Pick a minimum and maximum, for example 5 to 15 minutes. Every wait gets a new random length.
 - **Plays in a row.** Play the recording 2 or 3 times back to back before each wait, or let VoiceCycle pick a random count each round.
+- **Start delay.** Press Start now and let the first play begin 10, 20 or 30 minutes later, or after any delay you choose.
 - **Session timer.** Stop after 1, 2, 4, 6 or 8 hours, or any length up to 24 hours. The last play fades out gently.
 - **Works with the screen locked.** Verified with the screen off and Android Doze forced on.
 - **Lock-screen controls.** Pause, resume and stop from the notification or lock screen. The notification counts down to the next play.
@@ -46,17 +47,18 @@ VoiceCycle runs the whole cycle in a native Android media service. It keeps its 
 
 ## How a session looks
 
-With a 12-minute recording, a random wait of 5–15 minutes, 1–3 plays in a row, and a 2-hour session:
+With a 20-minute start delay, a 12-minute recording, a random wait of 5–15 minutes, 1–3 plays in a row, and a 2-hour session:
 
 ```
-0:00  ▶ play 1 of 2
-0:12  ▶ play 2 of 2
-0:24  · wait 8:36 (random)
-0:33  ▶ play 1 of 1
-0:45  · wait 13:02 (random)
-0:58  ▶ play 1 of 3
+0:00  ⏱ Start pressed, first play in 20:00
+0:20  ▶ play 1 of 2        (session timer starts)
+0:32  ▶ play 2 of 2
+0:44  · wait 8:36 (random)
+0:53  ▶ play 1 of 1
+1:05  · wait 13:02 (random)
+1:18  ▶ play 1 of 3
  ...
-2:00  ■ session time is up, fade out
+2:20  ■ session time is up, fade out
 ```
 
 ## Install
@@ -74,7 +76,8 @@ Requires Android 7.0 or newer.
 2. Choose **Wait between plays**: a preset, a custom value, or **Random** with a minimum and maximum.
 3. Choose **Plays in a row**: how many times it plays back to back before each wait.
 4. Choose **Session length**.
-5. Tap **Start** and lock your phone.
+5. Optionally choose a **Start delay** if the first play should begin later.
+6. Tap **Start** and lock your phone.
 
 > **Tip:** start with a short session and check the session report afterwards. If it says the session was cut off, follow the battery settings below.
 
@@ -82,12 +85,13 @@ Requires Android 7.0 or newer.
 
 | Setting | Options | Notes |
 |---|---|---|
+| Start delay | Off, 10, 20, 30 min · Custom 0–240 min | Silent countdown after Start. The first play and the session timer begin when it ends. Pause and Stop work during it |
 | Wait between plays | 0, 5, 10, 15, 20, 30 min · Custom 0–240 min · Random min–max | Starts when the recording **ends**. Decimals allowed, so `0.5` is 30 seconds. 0 repeats immediately |
 | Plays in a row | 1×, 2×, 3× · Custom 1–50 · Random min–max | Random draws a new count for every round |
 | Session length | 1, 2, 4, 6, 8 h · Custom 1–1440 min | The app shows roughly how many plays fit |
 | Theme | Dusk, Black, Ember | Black suits OLED screens. Ember is a warm palette |
 
-**Pause** freezes everything: the recording, the wait countdown and the session timer. Settings are locked while a session runs and apply to the next one.
+**Pause** freezes everything: the recording, the start delay, the wait countdown and the session timer. Settings are locked while a session runs and apply to the next one.
 
 ## Background playback
 
@@ -125,8 +129,8 @@ You need Node.js 20+, JDK 17 and the Android SDK. [docs/BUILDING.md](docs/BUILDI
 ## Testing
 
 ```bash
-npm test               # 50 Jest tests
-npm run test:native    # 31 JUnit tests for the playback state machine
+npm test               # 57 Jest tests
+npm run test:native    # 40 JUnit tests for the playback state machine
 npm run typecheck
 npm run lint
 ```
