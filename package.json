@@ -1,6 +1,6 @@
 {
   "name": "voicecycle",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Offline Android app that plays a recording, waits a fixed or random time, and repeats with the screen locked.",
   "author": "Saumilya JJ",
   "license": "MIT",
